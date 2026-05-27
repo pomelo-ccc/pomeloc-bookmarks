@@ -1,0 +1,222 @@
+name: Deploy Pomeloc
+
+on:
+  push:
+    branches:
+      - unstable
+      - development
+      - 'codex/**'
+    paths:
+      - '.github/workflows/deploy-pomeloc.yml'
+      - 'bookmarks/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'postcss.config.js'
+      - 'public/**'
+      - 'scripts/**'
+      - 'src/**'
+      - 'tailwind.config.js'
+      - 'tsconfig*.json'
+      - 'vite.config.js'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Action to run
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - rollback
+      rollback_target:
+        description: Optional backup path or basename to restore
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build_check:
+    if: ${{ github.event_name == 'push' && github.ref_name != 'unstable' }}
+    name: Build check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Verify dist
+        run: npm run verify:dist
+
+  deploy_unstable:
+    if: ${{ github.event_name == 'push' && github.ref_name == 'unstable' }}
+    name: Deploy unstable to production
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pomeloc-production
+      cancel-in-progress: false
+    env:
+      POMELOC_DEPLOY_HOST: ${{ secrets.POMELOC_DEPLOY_HOST }}
+      POMELOC_DEPLOY_SSH_KEY: ${{ secrets.POMELOC_DEPLOY_SSH_KEY }}
+      POMELOC_DEPLOY_KNOWN_HOSTS: ${{ secrets.POMELOC_DEPLOY_KNOWN_HOSTS }}
+      POMELOC_DEPLOY_USER: ${{ vars.POMELOC_DEPLOY_USER }}
+      POMELOC_DEPLOY_PORT: ${{ vars.POMELOC_DEPLOY_PORT }}
+      POMELOC_DEPLOY_REMOTE_DIR: ${{ vars.POMELOC_DEPLOY_REMOTE_DIR }}
+      POMELOC_DEPLOY_BACKUP_DIR: ${{ vars.POMELOC_DEPLOY_BACKUP_DIR }}
+      POMELOC_ROOT_URL: ${{ vars.POMELOC_ROOT_URL }}
+      POMELOC_BOOKMARKS_URL: ${{ vars.POMELOC_BOOKMARKS_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Verify dist
+        run: npm run verify:dist
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${POMELOC_DEPLOY_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if [[ -n "${POMELOC_DEPLOY_KNOWN_HOSTS}" ]]; then
+            printf '%s\n' "${POMELOC_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${POMELOC_DEPLOY_PORT:-22}" -H "${POMELOC_DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          fi
+
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy static site
+        run: |
+          export POMELOC_DEPLOY_SSH_IDENTITY_FILE="$HOME/.ssh/id_ed25519"
+          export POMELOC_DEPLOY_KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
+          ./scripts/deploy/deploy-static-site.sh
+
+  deploy_manual:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'deploy' }}
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pomeloc-production
+      cancel-in-progress: false
+    env:
+      POMELOC_DEPLOY_HOST: ${{ secrets.POMELOC_DEPLOY_HOST }}
+      POMELOC_DEPLOY_SSH_KEY: ${{ secrets.POMELOC_DEPLOY_SSH_KEY }}
+      POMELOC_DEPLOY_KNOWN_HOSTS: ${{ secrets.POMELOC_DEPLOY_KNOWN_HOSTS }}
+      POMELOC_DEPLOY_USER: ${{ vars.POMELOC_DEPLOY_USER }}
+      POMELOC_DEPLOY_PORT: ${{ vars.POMELOC_DEPLOY_PORT }}
+      POMELOC_DEPLOY_REMOTE_DIR: ${{ vars.POMELOC_DEPLOY_REMOTE_DIR }}
+      POMELOC_DEPLOY_BACKUP_DIR: ${{ vars.POMELOC_DEPLOY_BACKUP_DIR }}
+      POMELOC_ROOT_URL: ${{ vars.POMELOC_ROOT_URL }}
+      POMELOC_BOOKMARKS_URL: ${{ vars.POMELOC_BOOKMARKS_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Verify dist
+        run: npm run verify:dist
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${POMELOC_DEPLOY_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if [[ -n "${POMELOC_DEPLOY_KNOWN_HOSTS}" ]]; then
+            printf '%s\n' "${POMELOC_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${POMELOC_DEPLOY_PORT:-22}" -H "${POMELOC_DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          fi
+
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy static site
+        run: |
+          export POMELOC_DEPLOY_SSH_IDENTITY_FILE="$HOME/.ssh/id_ed25519"
+          export POMELOC_DEPLOY_KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
+          ./scripts/deploy/deploy-static-site.sh
+
+  rollback:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'rollback' }}
+    name: Roll back production
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pomeloc-production
+      cancel-in-progress: false
+    env:
+      POMELOC_DEPLOY_HOST: ${{ secrets.POMELOC_DEPLOY_HOST }}
+      POMELOC_DEPLOY_SSH_KEY: ${{ secrets.POMELOC_DEPLOY_SSH_KEY }}
+      POMELOC_DEPLOY_KNOWN_HOSTS: ${{ secrets.POMELOC_DEPLOY_KNOWN_HOSTS }}
+      POMELOC_DEPLOY_USER: ${{ vars.POMELOC_DEPLOY_USER }}
+      POMELOC_DEPLOY_PORT: ${{ vars.POMELOC_DEPLOY_PORT }}
+      POMELOC_DEPLOY_REMOTE_DIR: ${{ vars.POMELOC_DEPLOY_REMOTE_DIR }}
+      POMELOC_DEPLOY_BACKUP_DIR: ${{ vars.POMELOC_DEPLOY_BACKUP_DIR }}
+      POMELOC_ROOT_URL: ${{ vars.POMELOC_ROOT_URL }}
+      POMELOC_BOOKMARKS_URL: ${{ vars.POMELOC_BOOKMARKS_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${POMELOC_DEPLOY_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if [[ -n "${POMELOC_DEPLOY_KNOWN_HOSTS}" ]]; then
+            printf '%s\n' "${POMELOC_DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${POMELOC_DEPLOY_PORT:-22}" -H "${POMELOC_DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          fi
+
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Roll back static site
+        run: |
+          export POMELOC_DEPLOY_SSH_IDENTITY_FILE="$HOME/.ssh/id_ed25519"
+          export POMELOC_DEPLOY_KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
+          if [[ -n "${{ inputs.rollback_target }}" ]]; then
+            ./scripts/deploy/rollback-static-site.sh "${{ inputs.rollback_target }}"
+          else
+            ./scripts/deploy/rollback-static-site.sh
+          fi

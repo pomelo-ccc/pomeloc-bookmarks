@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pomeloc</title>
+    <meta
+      name="description"
+      content="Pomeloc is a quiet entry surface for bookmarks and a private API gateway."
+    />
+  </head>
+  <body class="portal-body" data-surface="paper">
+    <div class="portal-shell">
+      <div class="portal-grid" aria-hidden="true"></div>
+      <div class="portal-planes" aria-hidden="true">
+        <span class="portal-plane portal-plane--left"></span>
+        <span class="portal-plane portal-plane--right"></span>
+      </div>
+
+      <header class="portal-nav">
+        <div class="portal-brand">
+          <p class="portal-brand__eyebrow">PRIVATE INDEX</p>
+          <a class="portal-brand__mark" href="/">Pomeloc</a>
+        </div>
+
+        <nav class="portal-menu" aria-label="Primary">
+          <a class="is-active" href="/">Portal</a>
+          <a href="/bookmarks/">Bookmarks</a>
+          <a href="/api/">API</a>
+          <span>Journal</span>
+          <span>Status</span>
+        </nav>
+
+        <label class="portal-surface">
+          <span>Surface</span>
+          <select id="surface-select" aria-label="Surface selector">
+            <option value="paper">Paper</option>
+            <option value="gallery">Gallery</option>
+            <option value="slate">Slate</option>
+          </select>
+        </label>
+      </header>
+
+      <main class="portal-main">
+        <section class="portal-copy">
+          <p class="portal-copy__kicker">Minimal entry, clear hierarchy</p>
+          <h1 class="portal-copy__title">Pomeloc</h1>
+          <p class="portal-copy__lead">
+            一个安静的入口页，用来切换两套真正重要的系统，而不是用视觉噪音制造存在感。
+          </p>
+
+          <div class="portal-copy__actions">
+            <a class="portal-link portal-link--primary" href="/bookmarks/">Open Bookmarks</a>
+            <a class="portal-link" href="/api/">Open API</a>
+          </div>
+        </section>
+
+        <section class="portal-stage" aria-label="Routes">
+          <a class="portal-panel portal-panel--light" href="/bookmarks/">
+            <p class="portal-panel__index">01</p>
+            <h2 class="portal-panel__title">Bookmarks</h2>
+            <p class="portal-panel__body">
+              个人书签与知识入口，强调搜索、分类和长时间使用时的阅读舒适度。
+            </p>
+            <span class="portal-panel__cta">Enter archive</span>
+          </a>
+
+          <a class="portal-panel" href="/api/">
+            <p class="portal-panel__index">02</p>
+            <h2 class="portal-panel__title">API</h2>
+            <p class="portal-panel__body">
+              私有 AI 网关与运营入口，保持直接、清楚、没有多余装饰的控制界面。
+            </p>
+            <span class="portal-panel__cta">Enter gateway</span>
+          </a>
+        </section>
+      </main>
+
+      <section class="portal-strip" aria-label="Status">
+        <div class="portal-strip__item">
+          <p class="portal-strip__label">System Status</p>
+          <p class="portal-strip__value">All systems operational</p>
+        </div>
+        <div class="portal-strip__item">
+          <p class="portal-strip__label">Location</p>
+          <p class="portal-strip__value">Shanghai, CN</p>
+        </div>
+        <div class="portal-strip__item">
+          <p class="portal-strip__label">Use Case</p>
+          <p class="portal-strip__value">Bookmarks and private API access</p>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/portal.ts"></script>
+  </body>
+</html>
