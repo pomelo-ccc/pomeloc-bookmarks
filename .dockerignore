@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.github
+*.log
+dist.zip
+dist 2.zip
+tsconfig.app.tsbuildinfo
+tsconfig.node.tsbuildinfo
