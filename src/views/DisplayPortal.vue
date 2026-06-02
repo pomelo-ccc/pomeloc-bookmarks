@@ -6,8 +6,13 @@
       <AppSidebar />
 
       <main class="min-w-0 flex-1 overflow-y-auto">
-        <div class="mx-auto w-full max-w-[96rem] px-6 py-8 lg:px-10 lg:py-10">
-          <section class="page-rule pb-10">
+        <div
+          :class="[
+            'mx-auto w-full max-w-[96rem] px-6 lg:px-10',
+            isCompact ? 'py-5 lg:py-6' : 'py-8 lg:py-10',
+          ]"
+        >
+          <section v-if="!isCompact" class="page-rule pb-10">
             <div class="grid gap-8 xl:grid-cols-[minmax(0,34rem)_minmax(24rem,1fr)] xl:items-end">
               <div>
                 <p class="text-[0.72rem] uppercase tracking-[0.28em] text-text-muted">Personal Archive</p>
@@ -81,28 +86,48 @@
           </template>
 
           <template v-else>
-            <div class="pt-10">
-              <PinnedLinks v-if="!uiStore.activeCategory && !searchQuery" />
+            <div :class="isCompact ? 'pt-1' : 'pt-10'">
+              <PinnedLinks v-if="!isCompact && !uiStore.activeCategory && !searchQuery" />
 
               <section
                 v-for="cat in visibleCategories"
                 :key="cat.name"
-                class="page-rule mb-10 pb-10 last:mb-0 last:pb-0 last:after:hidden"
+                :class="[
+                  'page-rule last:mb-0 last:pb-0 last:after:hidden',
+                  isCompact ? 'mb-5 pb-5' : 'mb-10 pb-10',
+                ]"
               >
-                <div class="mb-6 flex items-end justify-between gap-6">
+                <div
+                  :class="[
+                    'flex items-end justify-between gap-6',
+                    isCompact ? 'mb-2' : 'mb-6',
+                  ]"
+                >
                   <div>
-                    <p class="text-[0.7rem] uppercase tracking-[0.24em] text-text-muted">Section</p>
-                    <h2 class="mt-3 text-2xl font-medium tracking-tight text-text-primary">{{ cat.name }}</h2>
+                    <p v-if="!isCompact" class="text-[0.7rem] uppercase tracking-[0.24em] text-text-muted">Section</p>
+                    <h2
+                      :class="[
+                        'font-medium tracking-tight text-text-primary',
+                        isCompact ? 'text-sm' : 'mt-3 text-2xl',
+                      ]"
+                    >
+                      {{ cat.name }}
+                    </h2>
                   </div>
-                  <p class="text-sm text-text-muted">{{ getLinksByCategory(cat.name).length }} links</p>
+                  <p v-if="!isCompact" class="text-sm text-text-muted">
+                    {{ getLinksByCategory(cat.name).length }} links
+                  </p>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div
+                  :class="isCompact ? 'flex flex-wrap gap-1.5' : 'grid gap-4 md:grid-cols-2 xl:grid-cols-3'"
+                >
                   <LinkCard
                     v-for="link in getLinksByCategory(cat.name)"
                     :key="link.id"
                     :link="link"
-                    class="stagger-item"
+                    :variant="isCompact ? 'compact' : 'card'"
+                    :class="isCompact ? '' : 'stagger-item'"
                   />
                 </div>
               </section>
@@ -134,6 +159,7 @@ const searchQuery = ref('')
 const { results: searchResults } = useSearch(computed(() => linksStore.links), searchQuery)
 
 const activeCategory = computed(() => uiStore.activeCategory)
+const isCompact = computed(() => uiStore.viewMode === 'compact')
 
 const filteredLinks = computed(() => {
   let links = searchResults.value

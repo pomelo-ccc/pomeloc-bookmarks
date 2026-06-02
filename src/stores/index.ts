@@ -142,6 +142,7 @@ export const useUiStore = defineStore('ui', {
     isAdmin: localStorage.getItem('linkhub_is_admin') === 'true',
     theme: (localStorage.getItem('linkhub_theme') || 'light') as 'light' | 'dark',
     colorTheme: (localStorage.getItem('linkhub_color_theme') || 'amber') as 'lavender' | 'orange' | 'amber' | 'rose',
+    viewMode: (localStorage.getItem('linkhub_view_mode') || 'card') as 'card' | 'compact',
   }),
 
   actions: {
@@ -174,6 +175,11 @@ export const useUiStore = defineStore('ui', {
       this.colorTheme = color
       localStorage.setItem('linkhub_color_theme', color)
       this.applyColorTheme()
+    },
+
+    toggleViewMode() {
+      this.viewMode = this.viewMode === 'compact' ? 'card' : 'compact'
+      localStorage.setItem('linkhub_view_mode', this.viewMode)
     },
 
     applyTheme() {

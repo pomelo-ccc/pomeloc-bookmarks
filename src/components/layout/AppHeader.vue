@@ -43,6 +43,16 @@
         <span class="hidden font-mono tracking-[0.18em] md:inline">{{ time }}</span>
 
         <button
+          v-if="route.name !== 'admin'"
+          class="inline-flex h-8 w-8 items-center justify-center border border-border-subtle text-text-secondary transition-colors hover:border-border hover:text-text-primary"
+          :title="uiStore.viewMode === 'compact' ? '切换到卡片模式' : '切换到紧凑模式'"
+          @click="uiStore.toggleViewMode()"
+        >
+          <LayoutGrid v-if="uiStore.viewMode === 'compact'" class="h-3.5 w-3.5" />
+          <Rows3 v-else class="h-3.5 w-3.5" />
+        </button>
+
+        <button
           class="inline-flex h-8 items-center gap-2 border border-border-subtle px-3 text-[0.72rem] uppercase tracking-[0.18em] text-text-secondary transition-colors hover:border-border hover:text-text-primary"
           :title="uiStore.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
           @click="uiStore.toggleTheme()"
@@ -75,7 +85,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { House, Moon, Sun } from 'lucide-vue-next'
+import { House, LayoutGrid, Moon, Rows3, Sun } from 'lucide-vue-next'
 import { useUiStore } from '@/stores'
 
 const uiStore = useUiStore()

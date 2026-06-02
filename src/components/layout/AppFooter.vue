@@ -4,6 +4,6 @@
     <span class="text-text-muted/20">|</span>
     <span><kbd class="text-[10px] text-text-muted/30 border border-border-subtle px-1 rounded-sm">Esc</kbd> Close</span>
     <span class="text-text-muted/20">|</span>
-    <span class="text-text-muted/40">LinkHub OS</span>
+    <span class="text-text-muted/40">Pomeloc</span>
   </footer>
 </template>

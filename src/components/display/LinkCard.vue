@@ -1,5 +1,18 @@
 <template>
   <a
+    v-if="variant === 'compact'"
+    :href="link.url"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="compact-link-tag"
+    :title="`${link.title} · ${truncateUrl(link.url)}`"
+    @click="linksStore.incrementClick(link.id)"
+  >
+    {{ link.title }}
+  </a>
+
+  <a
+    v-else
     :href="link.url"
     target="_blank"
     rel="noopener noreferrer"
@@ -59,6 +72,7 @@ import UiBadge from '@/components/ui/UiBadge.vue'
 
 const props = defineProps<{
   link: LinkItem
+  variant?: 'card' | 'compact'
 }>()
 
 const linksStore = useLinksStore()
