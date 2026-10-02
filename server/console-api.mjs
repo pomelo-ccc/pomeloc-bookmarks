@@ -15,6 +15,8 @@
  */
 
 import { createServer, request } from 'node:http'
+import { statfs } from 'node:fs/promises'
+import { cpus, loadavg, totalmem, freemem, uptime, hostname, platform, release } from 'node:os'
 import { execFile } from 'node:child_process'
 import { timingSafeEqual } from 'node:crypto'
 
@@ -38,6 +40,7 @@ const TARGETS = [
     label: 'HAR 路径检索',
     kind: 'container',
     container: 'doc-search',
+    path: '/doc-search/',
     probe: 'http://172.17.0.1:4173/',
   },
   {
@@ -45,6 +48,7 @@ const TARGETS = [
     label: '事件架构',
     kind: 'container',
     container: 'event-architecture',
+    path: '/event-architecture/',
     probe: 'http://127.0.0.1:3001/event-architecture',
     // 未登录返回 401，这代表它活着
     okStatuses: [200, 401],
@@ -54,6 +58,7 @@ const TARGETS = [
     label: '事件架构数据库',
     kind: 'container',
     container: 'event-architecture-db',
+    internal: true,
     note: '停掉它会让事件架构失去数据',
   },
   {
@@ -61,6 +66,7 @@ const TARGETS = [
     label: 'DPP Mock 服务',
     kind: 'systemd',
     unit: 'dpp-mock.service',
+    internal: true,
     // 该服务没有健康检查端点，探活只看 systemd 状态，不做 HTTP 探测
     probe: null
   },
@@ -96,12 +102,14 @@ const TARGETS = [
     id: 'pomeloc-web',
     label: 'Pomeloc Web (swarm)',
     kind: 'readonly',
+    internal: true,
     note: '当前站点的容器，停止它等于关站，只能看状态',
   },
   {
     id: 'dokploy',
     label: 'Dokploy',
     kind: 'readonly',
+    internal: true,
     note: '部署平台自身，不从这里操作',
   },
 ]
@@ -148,6 +156,7 @@ function probe(rawUrl, okStatuses = [200], host = 'pomeloc.top') {
       return
     }
 
+    const started = performance.now()
     const req = request(
       {
         protocol: url.protocol,
@@ -163,6 +172,7 @@ function probe(rawUrl, okStatuses = [200], host = 'pomeloc.top') {
         resolve({
           reachable: okStatuses.includes(res.statusCode),
           status: res.statusCode,
+          ms: Math.round(performance.now() - started),
         })
       }
     )
@@ -176,6 +186,72 @@ function probe(rawUrl, okStatuses = [200], host = 'pomeloc.top') {
     })
     req.end()
   })
+}
+
+/* ---------- 系统遥测 ---------- */
+
+async function systemMetrics() {
+  const cores = cpus()
+  const total = totalmem()
+  const free = freemem()
+
+  let disk = null
+  try {
+    const s = await statfs('/')
+    const totalBytes = s.blocks * s.bsize
+    const freeBytes = s.bavail * s.bsize
+    disk = {
+      totalBytes,
+      usedBytes: totalBytes - freeBytes,
+      percent: Math.round(((totalBytes - freeBytes) / totalBytes) * 100),
+    }
+  } catch {
+    disk = null
+  }
+
+  return {
+    host: hostname(),
+    platform: `${platform()} ${release()}`,
+    cores: cores.length,
+    model: (cores[0]?.model || '').trim(),
+    uptimeSec: Math.round(uptime()),
+    load: loadavg().map(n => Math.round(n * 100) / 100),
+    mem: {
+      totalBytes: total,
+      usedBytes: total - free,
+      percent: Math.round(((total - free) / total) * 100),
+    },
+    disk,
+  }
+}
+
+/**
+ * 首页用的只读概览。
+ *
+ * 这一份不经过鉴权（首页是公开的），所以只暴露：
+ * 主机身份、负载/内存/磁盘的聚合数字、每个服务的 up/down 与响应耗时。
+ * 不含容器名、systemd 单元名、日志路径等可用于进一步探测的信息。
+ */
+async function publicOverview() {
+  const metrics = await systemMetrics()
+
+  const services = await Promise.all(
+    TARGETS.filter(t => !t.internal).map(async t => {
+      const status = await buildStatus(t)
+      return {
+        id: t.id,
+        label: t.label,
+        kind: t.kind,
+        path: t.path || null,
+        state: status.state,
+        ms: status.probe?.ms ?? null,
+        status: status.probe?.status ?? null,
+        controllable: t.kind === 'container' || t.kind === 'systemd',
+      }
+    })
+  )
+
+  return { ...metrics, services, at: new Date().toISOString(), readOnly: true }
 }
 
 /* ---------- 状态采集 ---------- */
@@ -317,16 +393,25 @@ function send(res, code, payload) {
 }
 
 const server = createServer(async (req, res) => {
-  // 只接受来自本机 nginx 的请求，并且必须带对密钥
-  if (!TOKEN || !safeEqual(req.headers['x-console-token'] || '', TOKEN)) {
-    send(res, 403, { error: 'forbidden' })
-    return
-  }
-
   const url = new URL(req.url || '/', 'http://localhost')
   const parts = url.pathname.split('/').filter(Boolean)
 
+  // 公开只读概览不需要密钥，其余全部需要
+  const isPublic = req.method === 'GET' && url.pathname === '/public/overview'
+  if (!isPublic) {
+    if (!TOKEN || !safeEqual(req.headers['x-console-token'] || '', TOKEN)) {
+      send(res, 403, { error: 'forbidden' })
+      return
+    }
+  }
+
   try {
+    // 公开只读概览：首页用，不需要 token
+    if (req.method === 'GET' && url.pathname === '/public/overview') {
+      send(res, 200, await publicOverview())
+      return
+    }
+
     if (req.method === 'GET' && url.pathname === '/status') {
       const all = await Promise.all(TARGETS.map(buildStatus))
       send(res, 200, { host: 'VM-0-4-opencloudos', targets: all, at: new Date().toISOString() })
