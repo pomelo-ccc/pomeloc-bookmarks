@@ -152,6 +152,97 @@ body::before {
   gap: clamp(var(--s4), 3vh, var(--s8));
 }
 
+/* ---------- 标签小字 ----------
+ * 首页和控制台共用。小号、字距拉开、全大写。
+ */
+
+.eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------- 控制台共用骨架 ----------
+ * 控制台页复用这几个类。它们不参与首页的 deck/bay 布局，
+ * 但共用同一份 token 与页面宽度约束。
+ */
+
+.shell {
+  position: relative;
+  z-index: 2;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: clamp(var(--s4), 3vw, var(--s8));
+}
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'id tools'
+    'facts facts';
+  gap: var(--s4) var(--s6);
+  align-items: start;
+  padding: var(--s4) var(--s6);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--panel), oklch(0.185 0.007 280 / 0.6));
+  backdrop-filter: blur(8px);
+}
+
+.masthead__id {
+  grid-area: id;
+  min-width: 0;
+}
+
+.masthead__mark {
+  margin: var(--s1) 0 0;
+  font-size: clamp(1.5rem, 1rem + 1.8vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.masthead__facts {
+  grid-area: facts;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s8);
+  margin: 0;
+  padding-top: var(--s3);
+  border-top: 1px solid var(--rule);
+}
+
+.fact {
+  min-width: 0;
+}
+
+.fact dt {
+  margin-bottom: var(--s1);
+}
+
+.fact dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 46rem) {
+  .masthead {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'id'
+      'tools'
+      'facts';
+    gap: var(--s3);
+  }
+}
+
 /* ---------- 报头 ---------- */
 
 .deck {
@@ -302,6 +393,14 @@ body::before {
   grid-template-columns: minmax(0, 1fr) 17rem;
   gap: clamp(var(--s4), 2vw, var(--s6));
   align-items: start;
+}
+
+.bay {
+  min-width: 0;
+}
+
+.bay--side {
+  min-width: 0;
 }
 
 .bay__head {
@@ -661,6 +760,34 @@ body::before {
   50% {
     opacity: 0.25;
   }
+}
+
+/* ---------- 控制台页脚 ---------- */
+
+.colophon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s12);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+.colophon p {
+  margin: 0;
+  max-width: 40em;
+}
+
+.colophon__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.72rem;
 }
 
 /* ---------- 窄屏 ---------- */

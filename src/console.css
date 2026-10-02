@@ -353,7 +353,9 @@
 
 /* ---------- 未登录提示 ---------- */
 
-.gate {
+/* [hidden] 只是 UA 样式表的 display:none，作者写 display:flex 会盖掉它。
+   所以这里用 [hidden] 显式覆盖，且顺序放在 display 声明之后。 */
+.gate:not([hidden]) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -373,4 +375,13 @@
 .gate .btn {
   text-decoration: none;
   display: inline-block;
+}
+
+/* ---------- 兜底 ----------
+ * 元素用 hidden 属性控制显隐时，作者样式里的 display 会盖掉 UA 的
+ * [hidden] { display: none }。这条用 !important 兜住，避免同类问题复发。
+ * 只作用于带 hidden 属性的元素，不影响正常布局。
+ */
+[hidden] {
+  display: none !important;
 }
