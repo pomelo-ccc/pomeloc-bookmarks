@@ -1,0 +1,352 @@
+/* 控制台专用样式。共用 portal.css 的 token 与外框。 */
+
+.console-body {
+  font-size: 15px;
+}
+
+.back {
+  align-self: center;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 1px;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.back:hover,
+.back:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.masthead__tools {
+  display: flex;
+  gap: var(--s6);
+  align-items: center;
+}
+
+/* ---------- 提示条 ---------- */
+
+.banner {
+  margin-top: var(--s6);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--rule-strong);
+  border-left-width: 3px;
+  border-radius: 2px;
+  font-size: 0.88rem;
+}
+
+.banner[data-kind='error'] {
+  border-left-color: oklch(0.58 0.19 27);
+  background: oklch(0.58 0.19 27 / 0.08);
+  color: oklch(0.42 0.16 27);
+}
+
+.banner[data-kind='ok'] {
+  border-left-color: oklch(0.55 0.13 150);
+  background: oklch(0.55 0.13 150 / 0.1);
+  color: oklch(0.38 0.1 150);
+}
+
+.portal-body[data-surface='slate'] .banner[data-kind='error'] {
+  color: oklch(0.8 0.14 27);
+}
+
+.portal-body[data-surface='slate'] .banner[data-kind='ok'] {
+  color: oklch(0.82 0.12 150);
+}
+
+/* ---------- 按钮 ---------- */
+
+.btn {
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.btn:hover:not(:disabled),
+.btn:focus-visible:not(:disabled) {
+  border-color: var(--ink-2);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.btn--quiet:hover:not(:disabled) {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+
+.btn--go {
+  border-color: oklch(0.5 0.1 150);
+  color: oklch(0.4 0.1 150);
+}
+
+.btn--danger {
+  border-color: oklch(0.6 0.15 27);
+  color: oklch(0.48 0.16 27);
+}
+
+.portal-body[data-surface='slate'] .btn--go {
+  color: oklch(0.8 0.12 150);
+}
+
+.portal-body[data-surface='slate'] .btn--danger {
+  color: oklch(0.78 0.13 27);
+}
+
+/* ---------- 列表 ---------- */
+
+.panel {
+  padding-top: var(--s12);
+}
+
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s6);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.panel__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  text-align: right;
+  max-width: 30em;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 12rem) minmax(0, 1fr) 11rem;
+  grid-template-areas:
+    'state name meta actions'
+    'state name note actions';
+  gap: var(--s1) var(--s6);
+  align-items: baseline;
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.row2__state {
+  grid-area: state;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-3);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-3), transparent 55%);
+}
+
+.row2[data-state='up'] .dot {
+  background: oklch(0.6 0.14 150);
+  box-shadow: 0 0 0 1px color-mix(in oklab, oklch(0.6 0.14 150), transparent 45%);
+}
+
+.row2[data-state='down'] .dot,
+.row2[data-state='missing'] .dot {
+  background: oklch(0.6 0.17 27);
+  box-shadow: 0 0 0 1px color-mix(in oklab, oklch(0.6 0.17 27), transparent 45%);
+}
+
+.row2__name {
+  grid-area: name;
+  font-size: 1rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+.row2__meta {
+  grid-area: meta;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+
+.row2__note {
+  grid-area: note;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.row2__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  justify-content: flex-end;
+  align-items: start;
+}
+
+.row2__tag {
+  padding: 2px var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* 骨架屏：形状与真实行一致，避免加载完跳动 */
+.skeleton-row {
+  height: 4.4rem;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--ink-3), transparent 92%),
+    transparent
+  );
+  background-size: 20rem 100%;
+  animation: sweep 1.6s linear infinite;
+}
+
+@keyframes sweep {
+  from {
+    background-position: -20rem 0;
+  }
+  to {
+    background-position: calc(100% + 20rem) 0;
+  }
+}
+
+.list[aria-busy='false'] .skeleton-row {
+  display: none;
+}
+
+/* ---------- 日志抽屉 ---------- */
+
+.drawer {
+  margin-top: var(--s12);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--field);
+}
+
+.drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.drawer__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.logs {
+  margin: 0;
+  padding: var(--s4);
+  max-height: 26rem;
+  overflow: auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink-2);
+}
+
+/* ---------- 窄屏 ---------- */
+
+@media (max-width: 64rem) {
+  .row2 {
+    grid-template-columns: 7rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      'state name actions'
+      'state meta meta'
+      'state note note';
+    align-items: start;
+  }
+
+  .row2__actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 40rem) {
+  .masthead__tools {
+    flex-wrap: wrap;
+    gap: var(--s3);
+  }
+
+  .panel__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s1);
+  }
+
+  .panel__hint {
+    text-align: left;
+  }
+
+  .row2 {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'state'
+      'name'
+      'meta'
+      'note'
+      'actions';
+    gap: var(--s2);
+    padding-block: var(--s4);
+  }
+
+  .row2__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+  }
+}

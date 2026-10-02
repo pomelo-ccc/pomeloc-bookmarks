@@ -16,6 +16,8 @@ assert(existsSync(bookmarksIndexPath), 'missing dist/bookmarks/index.html')
 
 const rootIndex = readFileSync(rootIndexPath, 'utf8')
 const bookmarksIndex = readFileSync(bookmarksIndexPath, 'utf8')
+const consoleIndexPath = join(distDir.pathname, 'console', 'index.html')
+assert(existsSync(consoleIndexPath), 'missing dist/console/index.html')
 const distFiles = collectFiles(distDir.pathname)
 const distText = distFiles
   .filter(file => /\.(html|css|js)$/.test(file))
@@ -23,8 +25,9 @@ const distText = distFiles
   .join('\n')
 
 assert(rootIndex.includes('/bookmarks/'), 'root portal is missing /bookmarks/ entry')
-assert(rootIndex.includes('/api/'), 'root portal is missing /api/ entry')
 assert(rootIndex.includes('surface-select'), 'root portal is missing surface selector')
+assert(!rootIndex.includes('/api/'), 'root portal still links the removed /api/ service')
+assert(rootIndex.includes('/console/'), 'root portal is missing /console/ entry')
 assert(!rootIndex.includes('LinkHub - Admin'), 'root portal still looks like the bookmarks app shell')
 
 assert(bookmarksIndex.includes('id="app"'), 'bookmarks entry is missing Vue mount point')

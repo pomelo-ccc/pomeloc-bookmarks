@@ -1,0 +1,19 @@
+[Unit]
+Description=Pomeloc console API (local-only service control)
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/pomeloc-console
+Environment=PORT=8787
+EnvironmentFile=/etc/pomeloc-console.env
+ExecStart=/usr/local/bin/node /opt/pomeloc-console/console-api.mjs
+Restart=on-failure
+RestartSec=3
+# 只监听本机回环，不对外暴露端口
+StandardOutput=append:/var/log/pomeloc-console.log
+StandardError=append:/var/log/pomeloc-console.log
+
+[Install]
+WantedBy=multi-user.target

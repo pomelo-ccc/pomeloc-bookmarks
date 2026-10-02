@@ -4,74 +4,144 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pomeloc</title>
+    <title>Pomeloc · 服务索引</title>
     <meta
       name="description"
-      content="Pomeloc 团队工具入口：接口文档、事件架构、书签与私有 API 网关。"
+      content="部署在这台服务器上的应用与工具入口索引。"
     />
+    <script type="module" src="/src/portal.ts"></script>
   </head>
   <body class="portal-body" data-surface="paper">
-    <div class="portal-shell">
-      <div class="portal-grid" aria-hidden="true"></div>
-      <div class="portal-planes" aria-hidden="true">
-        <span class="portal-plane portal-plane--left"></span>
-        <span class="portal-plane portal-plane--right"></span>
-      </div>
+    <a class="skip" href="#index">跳到服务列表</a>
 
-      <header class="portal-nav">
-        <div class="portal-brand">
-          <p class="portal-brand__eyebrow">PRIVATE INDEX</p>
-          <a class="portal-brand__mark" href="/">Pomeloc</a>
+    <div class="shell">
+      <header class="masthead">
+        <div class="masthead__id">
+          <span class="eyebrow">私有索引</span>
+          <h1 class="masthead__mark">Pomeloc</h1>
         </div>
 
-        <nav class="portal-menu" aria-label="Primary">
-          <a class="is-active" href="/">Portal</a>
-          <a href="/doc-search/">Docs</a>
-          <a href="/event-architecture/">Events</a>
-          <a href="/bookmarks/">Bookmarks</a>
-          <a href="/api/">API</a>
-        </nav>
+        <dl class="masthead__facts">
+          <div class="fact">
+            <dt class="eyebrow">主机</dt>
+            <dd>124.221.109.50</dd>
+          </div>
+          <div class="fact">
+            <dt class="eyebrow">构建</dt>
+            <dd><time id="build-stamp" datetime="%BUILD_STAMP%">%BUILD_STAMP_TEXT%</time></dd>
+          </div>
+          <div class="fact">
+            <dt class="eyebrow">服务</dt>
+            <dd id="service-count">6</dd>
+          </div>
+        </dl>
 
-        <label class="portal-surface">
-          <span>Surface</span>
-          <select id="surface-select" aria-label="Surface selector">
-            <option value="paper">Paper</option>
-            <option value="gallery">Gallery</option>
-            <option value="slate">Slate</option>
-          </select>
-        </label>
+        <div class="masthead__tools">
+          <label class="surface">
+            <span class="eyebrow">外观</span>
+            <select id="surface-select" aria-label="切换外观">
+              <option value="paper">纸</option>
+              <option value="gallery">廊</option>
+              <option value="slate">砚</option>
+            </select>
+          </label>
+        </div>
       </header>
 
-      <main class="portal-main">
-        <section class="portal-copy">
-          <div class="portal-copy__heading">
-            <p class="portal-copy__kicker">Pomeloc · Interactive Index</p>
-            <h1 class="portal-copy__title">设计模式</h1>
+      <main class="index" id="index">
+        <section class="index__group" aria-labelledby="group-app">
+          <div class="index__head">
+            <h2 class="index__title" id="group-app">应用</h2>
+            <p class="index__hint">日常直接使用的页面与工具</p>
           </div>
-          <figure class="portal-book">
-            <canvas
-              id="portal-book-canvas"
-              aria-label="设计模式：当前页面为 Interface Docs，点击进入"
-              role="link"
-              tabindex="0"
-            ></canvas>
-            <div class="portal-book__controls">
-              <figcaption id="portal-book-caption" aria-live="polite">
-                Interface Docs · /doc-search/
-              </figcaption>
-            </div>
-            <div class="portal-book__fallback">
-              <strong>设计模式</strong>
-              <a href="/doc-search/">01 · Interface Docs</a>
-              <a href="/event-architecture/">02 · Event Architecture</a>
-              <a href="/bookmarks/">03 · Bookmarks</a>
-              <a href="/api/">04 · API Gateway</a>
-            </div>
-          </figure>
+
+          <ol class="rows">
+            <li class="row row--lead">
+              <a class="row__hit" href="/bookmarks/">
+                <span class="row__ord">01</span>
+                <span class="row__name">Bookmarks</span>
+                <span class="row__note">个人书签与知识入口。搜索、分类、置顶、导入导出</span>
+                <span class="row__path">/bookmarks/</span>
+              </a>
+            </li>
+
+            <li class="row">
+              <a class="row__hit" href="/doc-search/">
+                <span class="row__ord">02</span>
+                <span class="row__name">HAR 路径检索</span>
+                <span class="row__note">在 HAR 文件里按接口路径反查请求与响应</span>
+                <span class="row__path">/doc-search/</span>
+              </a>
+            </li>
+
+            <li class="row">
+              <a class="row__hit" href="/dpp/">
+                <span class="row__ord">03</span>
+                <span class="row__name">DPP 开发平台</span>
+                <span class="row__note">模型驱动的企业应用平台。配置定义骨架，代码实现行为</span>
+                <span class="row__path">/dpp/</span>
+              </a>
+            </li>
+
+            <li class="row">
+              <a class="row__hit" href="/examples/">
+                <span class="row__ord">04</span>
+                <span class="row__name">DPP Examples</span>
+                <span class="row__note">平台能力的可运行示例宿主</span>
+                <span class="row__path">/examples/</span>
+              </a>
+            </li>
+
+            <li class="row">
+              <a class="row__hit" href="/event-architecture/">
+                <span class="row__ord">05</span>
+                <span class="row__name">事件架构</span>
+                <span class="row__note">事件驱动架构的图景与流转说明</span>
+                <span class="row__path">/event-architecture/</span>
+              </a>
+              <span class="row__flag">需登录</span>
+            </li>
+
+            <li class="row">
+              <a class="row__hit" href="/design/">
+                <span class="row__ord">06</span>
+                <span class="row__name">UI 设计理论</span>
+                <span class="row__note">界面设计理论九章，四个前后对照案例</span>
+                <span class="row__path">/design/</span>
+              </a>
+            </li>
+          </ol>
+        </section>
+
+        <section class="index__group index__group--aside" aria-labelledby="group-platform">
+          <div class="index__head">
+            <h2 class="index__title" id="group-platform">平台</h2>
+            <p class="index__hint">管理这一层本身</p>
+          </div>
+
+          <ol class="rows">
+            <li class="row">
+              <a class="row__hit" href="/console/">
+                <span class="row__ord">C</span>
+                <span class="row__name">控制台</span>
+                <span class="row__note">各服务的运行状态、启停与日志</span>
+                <span class="row__path">/console/</span>
+              </a>
+              <span class="row__flag">需登录</span>
+            </li>
+          </ol>
         </section>
       </main>
-    </div>
 
-    <script type="module" src="/src/portal.ts"></script>
+      <footer class="colophon">
+        <p>
+          这一页只是索引。每个服务各自独立部署，互相不依赖。
+        </p>
+        <p class="colophon__meta">
+          <span>nginx · Docker · Dokploy</span>
+          <span>OpenCloudOS 9</span>
+        </p>
+      </footer>
+    </div>
   </body>
 </html>
