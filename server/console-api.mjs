@@ -18,11 +18,23 @@ import { createServer, request } from 'node:http'
 import { statfs } from 'node:fs/promises'
 import { cpus, loadavg, totalmem, freemem, uptime, hostname, platform, release } from 'node:os'
 import { execFile } from 'node:child_process'
-import { timingSafeEqual } from 'node:crypto'
+import { timingSafeEqual, scrypt as scryptCb, randomBytes, createHmac, createHash } from 'node:crypto'
+import { promisify } from 'node:util'
+
+const scrypt = promisify(scryptCb)
 
 const PORT = Number(process.env.PORT || 8787)
 const TOKEN = process.env.TOKEN || ''
 const HOST = '127.0.0.1'
+// 登录口令。格式 USER:PASSWORD_HASH，哈希为 scrypt(pw, salt) 的 hex
+const AUTH_USER = process.env.CONSOLE_USER || 'pomelo'
+const AUTH_SALT = process.env.CONSOLE_SALT || ''
+const AUTH_HASH = process.env.CONSOLE_HASH || ''
+// 会话签名密钥；缺省时退回 TOKEN，避免明文空密钥
+const SESSION_SECRET = process.env.CONSOLE_SESSION_SECRET || TOKEN
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000
+const COOKIE_NAME = 'pomeloc_console'
+
 const MAX_LOG_LINES = 400
 const CMD_TIMEOUT = 30_000
 
@@ -382,6 +394,170 @@ async function fetchLogs(target, lines) {
 
 /* ---------- HTTP ---------- */
 
+/* ---------- 会话 ---------- */
+
+/** 常量时间比较两个 hex 摘要 */
+function digestEqual(a, b) {
+  const ba = Buffer.from(String(a))
+  const bb = Buffer.from(String(b))
+  if (ba.length !== bb.length) return false
+  return timingSafeEqual(ba, bb)
+}
+
+async function verifyPassword(password) {
+  if (!AUTH_SALT || !AUTH_HASH) return false
+  const derived = await scrypt(password, AUTH_SALT, 64)
+  return digestEqual(derived.toString('hex'), AUTH_HASH)
+}
+
+function sign(payload) {
+  return createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url')
+}
+
+function issueSession(user) {
+  const expires = Date.now() + SESSION_TTL_MS
+  const payload = `${user}|${expires}`
+  return `${Buffer.from(payload).toString('base64url')}.${sign(payload)}`
+}
+
+/**
+ * 校验并解析会话 cookie。
+ *
+ * 关键：cookie 的格式是 base64(payload).signature，而签名是对**原始 payload**
+ * 计算的，不是对 base64 串。所以必须先解码再验签。
+ * （之前这里直接拿 base64 串去验，导致自己签发的 cookie 永远验不过。）
+ */
+function readSession(cookieHeader) {
+  if (!cookieHeader) return null
+
+  const cookies = parseCookies(cookieHeader)
+  const value = cookies[COOKIE_NAME]
+  if (!value) return null
+
+  const dot = value.lastIndexOf('.')
+  if (dot < 1) return null
+
+  const encoded = value.slice(0, dot)
+  const mac = value.slice(dot + 1)
+
+  let payload
+  try {
+    payload = Buffer.from(encoded, 'base64url').toString('utf8')
+  } catch {
+    return null
+  }
+
+  // 先验签，再解析内容 —— 顺序不能反，否则未验证的数据会先被使用
+  if (!digestEqual(sign(payload), mac)) return null
+
+  const [user, expires] = payload.split('|')
+  if (!user || !expires) return null
+  if (Number(expires) < Date.now()) return null
+  return { user }
+}
+
+function parseCookies(header) {
+  const out = {}
+  if (!header) return out
+  for (const part of header.split(';')) {
+    const i = part.indexOf('=')
+    if (i < 0) continue
+    out[part.slice(0, i).trim()] = part.slice(i + 1).trim()
+  }
+  return out
+}
+
+async function readBody(req, limit = 4096) {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks = []
+    req.on('data', c => {
+      size += c.length
+      if (size > limit) {
+        reject(new Error('body too large'))
+        req.destroy()
+        return
+      }
+      chunks.push(c)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
+
+/* ---------- 登录页 ---------- */
+
+const LOGIN_PAGE = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>登录 · Pomeloc 控制台</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: oklch(0.145 0.006 280); color: oklch(0.95 0.005 280);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 1.5rem;
+  }
+  .card {
+    width: 100%; max-width: 22rem; padding: 2rem;
+    border: 1px solid oklch(0.32 0.01 280); border-radius: 4px;
+    background: oklch(0.185 0.007 280);
+  }
+  .tag {
+    display: block; font-size: 0.62rem; letter-spacing: 0.28em;
+    text-transform: uppercase; color: oklch(0.78 0.15 68); margin-bottom: 0.5rem;
+  }
+  h1 { margin: 0 0 1.5rem; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+  label { display: block; font-size: 0.68rem; letter-spacing: 0.16em;
+          text-transform: uppercase; color: oklch(0.58 0.01 280); margin-bottom: 0.4rem; }
+  input {
+    width: 100%; padding: 0.7rem 0.85rem; margin-bottom: 1.1rem;
+    border: 1px solid oklch(0.32 0.01 280); border-radius: 3px;
+    background: oklch(0.24 0.009 280); color: inherit; font: inherit;
+  }
+  input:focus-visible { outline: 2px solid oklch(0.75 0.14 245); outline-offset: 2px; }
+  button {
+    width: 100%; padding: 0.75rem; border: 1px solid oklch(0.6 0.11 66);
+    border-radius: 3px; background: oklch(0.78 0.15 68 / 0.12);
+    color: oklch(0.82 0.14 68); font: inherit; font-weight: 550; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: oklch(0.78 0.15 68 / 0.2); }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .err {
+    margin: 0 0 1rem; padding: 0.6rem 0.75rem; border-radius: 3px;
+    border: 1px solid oklch(0.68 0.2 25 / 0.5); background: oklch(0.68 0.2 25 / 0.12);
+    color: oklch(0.8 0.14 27); font-size: 0.85rem;
+  }
+  .back { display: block; margin-top: 1.25rem; font-size: 0.8rem;
+          color: oklch(0.58 0.01 280); text-decoration: none; text-align: center; }
+  .back:hover { color: oklch(0.74 0.008 280); }
+</style>
+</head>
+<body>
+  <form class="card" method="POST" action="/console/api/login">
+    <span class="tag">Pomeloc</span>
+    <h1>控制台</h1>
+    __ERROR__
+    <label for="u">用户名</label>
+    <input id="u" name="user" autocomplete="username" required autofocus>
+    <label for="p">口令</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">进入</button>
+    <a class="back" href="/">← 返回首页</a>
+  </form>
+</body>
+</html>`
+
+function loginPage(error) {
+  const block = error ? `<p class="err">${error}</p>` : ''
+  return LOGIN_PAGE.replace('__ERROR__', block)
+}
+
 function send(res, code, payload) {
   const body = JSON.stringify(payload)
   res.writeHead(code, {
@@ -396,11 +572,27 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', 'http://localhost')
   const parts = url.pathname.split('/').filter(Boolean)
 
-  // 公开只读概览不需要密钥，其余全部需要
-  const isPublic = req.method === 'GET' && url.pathname === '/public/overview'
-  if (!isPublic) {
+  // 第一道：这些端点自行判定身份，不走 nginx 注入的共享密钥
+  const skipsToken =
+    (req.method === 'GET' &&
+      (url.pathname === '/public/overview' || url.pathname === '/session' || url.pathname === '/login')) ||
+    (req.method === 'POST' && (url.pathname === '/login' || url.pathname === '/logout'))
+
+  if (!skipsToken) {
+    // 第二道：共享密钥。由 nginx 注入，确保请求确实经过 nginx。
     if (!TOKEN || !safeEqual(req.headers['x-console-token'] || '', TOKEN)) {
       send(res, 403, { error: 'forbidden' })
+      return
+    }
+  }
+
+  // 第三道：会话。凡是能读状态、看日志、启停服务的，都要已登录。
+  // （nginx 不再做 Basic Auth，所以这里必须自己守住，否则 /status 会裸奔。）
+  const needsSession = !skipsToken && url.pathname !== '/public/overview'
+  if (needsSession) {
+    const session = readSession(req.headers.cookie)
+    if (!session) {
+      send(res, 401, { error: 'unauthenticated' })
       return
     }
   }
@@ -409,6 +601,61 @@ const server = createServer(async (req, res) => {
     // 公开只读概览：首页用，不需要 token
     if (req.method === 'GET' && url.pathname === '/public/overview') {
       send(res, 200, await publicOverview())
+      return
+    }
+
+    /* ---------- 登录 / 登出 ---------- */
+
+    if (req.method === 'POST' && url.pathname === '/login') {
+      const raw = await readBody(req)
+      const form = new URLSearchParams(raw)
+      const user = form.get('user') || ''
+      const password = form.get('password') || ''
+
+      const userOK = user === AUTH_USER
+      const passOK = await verifyPassword(password)
+
+      if (!userOK || !passOK) {
+        // 不区分「用户不存在」和「口令错误」，避免枚举用户名
+        res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
+        res.end(loginPage('用户名或口令不对'))
+        return
+      }
+
+      const cookie = [
+        `${COOKIE_NAME}=${issueSession(user)}`,
+        'HttpOnly',
+        'Path=/console',
+        'SameSite=Strict',
+        `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
+      ].join('; ')
+
+      res.writeHead(303, { Location: '/console/', 'Set-Cookie': cookie, 'Cache-Control': 'no-store' })
+      res.end()
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/logout') {
+      res.writeHead(303, {
+        Location: '/console/',
+        'Set-Cookie': `${COOKIE_NAME}=; HttpOnly; Path=/console; SameSite=Strict; Max-Age=0`,
+        'Cache-Control': 'no-store',
+      })
+      res.end()
+      return
+    }
+
+    // 会话状态：前端用它决定显示登录还是控制台
+    // 直接访问登录页
+    if (req.method === 'GET' && url.pathname === '/login') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
+      res.end(loginPage(null))
+      return
+    }
+
+    if (req.method === 'GET' && url.pathname === '/session') {
+      const session = readSession(req.headers.cookie)
+      send(res, 200, { authenticated: Boolean(session), user: session?.user || null })
       return
     }
 

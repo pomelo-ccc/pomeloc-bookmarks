@@ -64,6 +64,9 @@ const el = {
   drawerTitle: document.getElementById('drawer-title') as HTMLElement,
   drawerClose: document.getElementById('drawer-close') as HTMLButtonElement,
   logs: document.getElementById('logs') as HTMLElement,
+  gate: document.getElementById('gate') as HTMLElement,
+  logout: document.getElementById('logout') as HTMLButtonElement,
+  count: document.getElementById('svc-count') as HTMLElement | null,
 }
 
 /* ---------- 工具 ---------- */
@@ -175,14 +178,35 @@ function render(data: StatusPayload) {
   el.at.textContent = fmtTime(data.at)
   el.list.setAttribute('aria-busy', 'false')
   el.list.replaceChildren(...data.targets.map(renderRow))
+
+  if (el.count) {
+    const up = data.targets.filter(t => t.state === 'up').length
+    const ctl = data.targets.filter(t => t.controllable).length
+    el.count.textContent = `${up}/${data.targets.length} 运行中，${ctl} 个可启停`
+  }
 }
 
 /* ---------- 数据 ---------- */
 
+/**
+ * 会话失效时不再抛一句 HTTP 401 让人猜，
+ * 直接给出重新登录的入口。
+ */
 async function loadStatus() {
   try {
     const res = await fetch(`${API}/status`, { headers: { Accept: 'application/json' } })
+
+    if (res.status === 401 || res.status === 403) {
+      el.list.setAttribute('aria-busy', 'false')
+      el.list.replaceChildren()
+      el.gate.hidden = false
+      if (el.count) el.count.textContent = '未登录'
+      return
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    el.gate.hidden = true
     render((await res.json()) as StatusPayload)
   } catch (err) {
     el.list.setAttribute('aria-busy', 'false')
@@ -247,6 +271,15 @@ el.refresh.addEventListener('click', () => {
 
 el.drawerClose.addEventListener('click', () => {
   el.drawer.hidden = true
+})
+
+el.logout.addEventListener('click', async () => {
+  el.logout.disabled = true
+  try {
+    await fetch(`${API}/logout`, { method: 'POST' })
+  } finally {
+    window.location.href = '/'
+  }
 })
 
 document.addEventListener('visibilitychange', () => {

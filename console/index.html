@@ -32,18 +32,24 @@
         </dl>
 
         <div class="masthead__tools">
-          <a class="back" href="/">← 返回索引</a>
+          <a class="back" href="/">← 返回首页</a>
           <button class="btn" id="refresh" type="button">立即刷新</button>
+          <button class="btn btn--quiet" id="logout" type="button">登出</button>
         </div>
       </header>
 
       <div class="banner" id="banner" role="status" hidden></div>
 
+      <div class="gate" id="gate" hidden>
+        <p class="gate__text">会话已过期或未登录。</p>
+        <a class="btn btn--go" href="/console/api/login">重新登录</a>
+      </div>
+
       <main class="panel">
         <div class="panel__head">
           <h2 class="panel__title">服务</h2>
           <p class="panel__hint">
-            只提供白名单内的操作。静态站点与危险目标不提供启停。
+            <span id="svc-count">—</span> · 只提供白名单内的操作，静态站点与危险目标不提供启停
           </p>
         </div>
 
